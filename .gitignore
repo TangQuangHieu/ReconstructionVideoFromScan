@@ -1,0 +1,14 @@
+*.zip
+*.tiff
+*.jpg
+*.dll
+*.lib
+*.iobj
+*.ipdb
+*.pdb
+*.cri
+.vs/
+include/opencv2/
+/data/
+ReconstructVideoFromScan/x64/
+
