@@ -89,20 +89,15 @@ public:
 	StitchImage();
 	~StitchImage();
 public:
-	cv::Mat RectifyBlackBorder(cv::Mat inputImage, const std::string& strImagOutName);
-	cv::Mat RectifyDeepBlueColumns(cv::Mat inputImage,const std::string& strImagOutName);
-	bool DetectNewFrame(cv::Mat inputImage, bool bShow = false, int deltaFrame = 300, int deltaY = 30);
-	void Stitch2Images(cv::Mat imgUp, cv::Mat imgDown, bool bShow = false, int deltaX = 40, int deltaY =100);
-	void SplitFrame(cv::Mat inputImage);
 	void WriteResult(cv::Mat inputImage, const std::string& strOutputImageName);
 	void SetImagePath(const std::string& strPath);
 	void SetImageOutPath(const std::string& strOutPath);
-	void SetFirstImage(cv::Mat Img);
-	void Run(const std::string& strInputPath, const std::string& strOutputPath);
 	void RunOptimize(const std::string& strInputPath, const std::string& strOutputPath);
+	void Run(const std::string& strInputPath, const std::string& strOutputPath);
 	std::string GetImagePath() const;
 	std::string GetImageOutPath() const;
 	cv::Mat GetImageResult(bool bCopy = false);
+	int DecodeTiff(const std::string& strInputPath, const std::string& strOutputPath);
 
 private:
 	
@@ -115,5 +110,11 @@ private:
 	cv::Mat m_cvmOutImg;
 	std::vector<cv::Mat> m_cvmFrameList;
 	//cv::Mat m_cvmFirstImg;
-	float CompareBlockDifferent(cv::Mat block1, cv::Mat block2);
+	cv::Mat RectifyDeepBlueColumns(cv::Mat inputImage,const std::string& strImagOutName);
+	void Stitch2Images(cv::Mat imgUp, cv::Mat imgDown, bool bShow = false, int deltaX = 40, int deltaY =100);
+	void SetFirstImage(cv::Mat Img);
+	cv::Mat RectifyBlackBorder(cv::Mat inputImage, const std::string& strImagOutName);
+	bool DetectNewFrame(cv::Mat inputImage, bool bShow = false, int deltaFrame = 300, int deltaY = 30);
+	void SplitFrame(cv::Mat inputImage);
+	float CompareBlockDifferent(cv::Mat block1, cv::Mat block2);	
 };

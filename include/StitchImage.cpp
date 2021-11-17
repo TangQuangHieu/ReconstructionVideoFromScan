@@ -1,5 +1,55 @@
 #include "pch.h"
 #include "StitchImage.h"
+#include <iostream>
+#include <string>
+#include <algorithm>
+#include <future>
+#include <cstring>
+
+#include "pch.h"
+#include "ProcessImage.h"
+#include "CintelRawImage.h"
+#include "FilesystemUtils.h"
+#include "KLV.h"
+
+namespace
+{
+    std::mutex	printingMutex;
+    bool		exceptionThrown = false;
+
+    void waitForThreads(std::vector<std::future<void>>& myThreads)
+    {
+        for (auto& thread : myThreads)
+            thread.get();
+    }
+
+    int usage()
+    {
+        using namespace std;
+
+        cout << "Usage: ProcessImage [options] [frame.cri ...]" << endl;
+        cout << endl;
+        cout << "    ProcessImage reads frames from CRI files, recorded using DaVinci Resolve or CaptureImage," << endl;
+        cout << "    and processes them using metadata in the CRI, writing a 16-bit RGB TIFF for each input frame." << endl;
+        cout << "    When used with --input-dir <directory> it will process all CRI files in that directory to .TIFF files" << endl;
+        cout << "    in the same directory. Use --output-dir to specify a different output directory." << endl;
+        cout << endl;
+        cout << "    [frame.cri ...]               Specify individual CRI files instead of an input directory" << endl;
+        cout << "    -i, --input-dir <directory>   Input directory to read CRI files from" << endl;
+        cout << "    -o, --output-dir <directory>  Output directory to write processed images as 16-bit RGB TIFF files" << endl;
+        cout << "    --hdr                         Combine high and low exposure frames into a single high dynamic range image" << endl;
+        cout << endl;
+        cout << "    -d, --dump-metadata           Dump metadata from CRI file without processing" << endl;
+        cout << "    -u, --save-uncompressed-cri   Convert a CRI with compressed frame data to uncompressed CRI without processing" << endl;
+        cout << "    -r, --save-raw                Extract uncompressed raw image data from CRI file and save as 16-bit Grayscale TIFF without processing" << endl;
+        cout << "        --save-raw-data           Extract uncompressed raw image data from CRI file and save as .raw without processing" << endl;
+        cout << "        --save-raw-rgb-data       Extract uncompressed raw image data from CRI file and save as .raw with processing" << endl;
+        cout << "    -q, --quiet                   Disable verbose logging" << endl;
+        cout << endl;
+
+        return 1;
+    }
+}
 
 StitchImage::StitchImage()
 {
@@ -7,6 +57,8 @@ StitchImage::StitchImage()
 
 StitchImage::~StitchImage()
 {
+    cv::destroyAllWindows();
+    cv::waitKey(1);
 }
 
 cv::Mat StitchImage::RectifyBlackBorder(cv::Mat Image, const std::string& strImagOutName)
@@ -372,6 +424,211 @@ void StitchImage::Run(const std::string& strInputPath, const std::string& strOut
 
 }
 
+int StitchImage::DecodeTiff(const std::string& strInputPath, const std::string& strOutputPath)
+{
+    std::string					inputDirectory = strInputPath;
+    std::string					outputDirectory = strOutputPath;
+    bool						verbose = true;
+    bool						dumpMedata = false;
+    bool						saveRawTiff = false;
+    bool						saveRawData = false;
+    bool						saveRawRGBData = false;
+    bool						saveUncompressedCRI = false;
+    bool						hdr = false;
+    std::vector<std::string>	filenameArgs;
+
+    int								processThreadsMax = (std::thread::hardware_concurrency() ? std::thread::hardware_concurrency() : 4); // Default to 4 if not supported feature
+    std::vector<std::future<void>>	processThreads;
+    try
+    {
+        // Check for misuse of command line args
+        if (!inputDirectory.empty())
+        {
+            if (filenameArgs.size() > 0)
+                throw std::runtime_error("Cannot specify -i <directory> together with individual CRI filenames");
+
+            filenameArgs = getCRIFilesFromDirectory(inputDirectory);
+            if (filenameArgs.size() == 0)
+                throw std::runtime_error("No .CRI files found in directory " + inputDirectory);
+        }
+        else if (filenameArgs.size() == 0)
+            return usage();
+
+        if (saveUncompressedCRI && (outputDirectory.empty() || outputDirectory == inputDirectory))
+        {
+            throw std::runtime_error("Output directory must be specified and different to input directory when writing CRI files to avoid overwriting input CRI files");
+        }
+
+        if (!outputDirectory.empty())
+            makeSingleDir(outputDirectory);
+
+        // Process the images
+        for (const auto& filename : filenameArgs)
+        {
+            if (dumpMedata)
+            {
+                if (verbose)
+                    std::cout << "Metadata for: " << filename << std::endl;
+                KLV::dumpMetadata(filename);
+                if (verbose)
+                    std::cout << std::endl;
+                continue;
+            }
+
+            auto processLambda = [](std::string filename, bool hdr, bool saveRawTiff, bool verbose, bool saveRawData, bool saveUncompressedCRI, bool saveRawRGBData, std::string outputDirectory)
+            {
+                try
+                {
+                    const auto cri = CintelRawImage(filename);
+
+                    if (saveRawTiff)
+                    {
+                        // Save RAW grayscale TIFFs with an extra "_raw" in their name to distinguish them from processed RGB TIFFs
+                        const auto outputFile = getOutputFilename(outputDirectory, filename, "_raw.tiff");
+
+                        ProcessImageUtil::saveGrayscaleTIFF(cri.width(), cri.height(), cri.getRawFrame().data(), outputFile.c_str());
+
+                        if (verbose)
+                        {
+                            std::lock_guard<std::mutex> printingLock(printingMutex);
+                            std::cout << "Saved RAW 16-bit grayscale TIFF: " << outputFile << std::endl;
+                        }
+                    }
+
+                    if (saveRawData)
+                    {
+                        const auto outputFile = getOutputFilename(outputDirectory, filename, ".raw");
+
+                        saveBinaryFile(outputFile, cri.getRawFrame());
+
+                        if (verbose)
+                        {
+                            std::lock_guard<std::mutex> printingLock(printingMutex);
+                            std::cout << "Saved Uncompressed raw image data: " << outputFile << std::endl;
+                        }
+                    }
+
+                    if (saveUncompressedCRI)
+                    {
+                        const auto outputFile = getOutputFilename(outputDirectory, filename, ".cri");
+
+                        cri.saveAsUncompressed(outputFile);
+                        if (verbose)
+                        {
+                            std::lock_guard<std::mutex> printingLock(printingMutex);
+                            std::cout << "Saved Uncompressed CRI: " << outputFile << std::endl;
+                        }
+                    }
+
+                    if (verbose)
+                    {
+                        std::lock_guard<std::mutex> printingLock(printingMutex);
+                        std::cout << "Processing: " << filename << std::endl;
+                    }
+
+                    // Perform the steps necessary to process RAW linear image sensor data into a color RGB image
+                    ProcessImage	img(cri);
+
+                    // Interpolate missing RGB pixels from bayer pattern image sensor data
+                    // NOTE: Leaves in log gamma for stability
+                    img.debayer(DebayerMethod::HighQuality);
+
+                    // Apply the horizontal and vertical stability offsets to the whole image.
+                    // NOTE: Converts back to linear gamma for continued processing so must be run after debayer
+                    img.applyStabilityOffsets(StabilizerMethod::SubPixel);
+
+                    // Combine the normal frame with the high exposure frame to improve signal to noise
+                    // This must happen after debayer and stabilisation in order for frame alignment to match
+                    // It must also be before any masking or downstream gains in order to have the correct
+                    // color match between the high and low exposure captured frames
+                    if (hdr)
+                    {
+                        std::string		highExposureFilename = getHDRFilename(filename);
+                        // Read in the high exposure frame
+                        ProcessImage	highimg(CintelRawImage(highExposureFilename.c_str()));
+                        if (verbose)
+                            std::cout << "Processing high exposure frame: " << highExposureFilename << std::endl;
+
+                        // Match the processing of the normal frame to this point on the high pass frame
+                        highimg.debayer(DebayerMethod::HighQuality);
+                        highimg.applyStabilityOffsets(StabilizerMethod::SubPixel);
+
+                        // Now combine the two into the original image
+                        img.combineHDR(highimg);
+                    }
+
+                    // Compensate for the overlapping photosensitivity functions of each color filter in the bayer mask
+                    img.linearMask();
+
+                    // Convert linear sensor data to film log data using a log function specific to the film type
+                    // and apply the log mask (a calibration specific to each Cintel scanner)
+                    img.logMask();
+
+                    // Apply a gain to each color if specified in the metadata
+                    img.gains();
+
+                    // Apply an offset to each color if specified in the metadata
+                    img.lifts();
+
+                    // Apply the blanking and image flips last
+                    img.applyBlankingAndFlips();
+
+                    std::string rgbFilename;
+                    if (saveRawRGBData)
+                    {
+                        // Save a color RGB RAW data array
+                        rgbFilename = getOutputFilename(outputDirectory, filename, ".raw");
+                        saveBinaryFileRGB(rgbFilename, img.getRgbFrame());
+                    }
+                    else
+                    {
+                        // Save a color RGB TIFF
+                        rgbFilename = getOutputFilename(outputDirectory, filename, ".tiff");
+                        ProcessImageUtil::saveColorTIFF(cri.width(), cri.height(), ProcessImageUtil::array_vector_float_data{ img.getRgbFrame() }, rgbFilename.c_str());
+                    }
+
+                    if (verbose)
+                    {
+                        std::lock_guard<std::mutex> printingLock(printingMutex);
+                        std::cout << "Wrote RGB:  " << rgbFilename << std::endl;
+                    }
+                }
+                catch (const std::exception& e)
+                {
+                    std::lock_guard<std::mutex> printingLock(printingMutex);
+                    std::cerr << e.what() << std::endl;
+                    exceptionThrown = true;
+                }
+            };
+
+            if (!exceptionThrown)
+            {
+                if (processThreads.size() >= processThreadsMax || filename == filenameArgs.back())
+                {
+                    // Wait for completion and cleanup
+                    waitForThreads(processThreads);
+                    processThreads.clear();
+                }
+                // Spawn a new thread to process the next image
+                processThreads.push_back(std::async(std::launch::async, processLambda, filename, hdr, saveRawTiff, verbose, saveRawData, saveUncompressedCRI, saveRawRGBData, outputDirectory));
+            }
+            else
+            {
+                // An exception occurred within the processing threads, let final processors complete and then abort
+                waitForThreads(processThreads);
+                throw std::runtime_error("Processor threads caused an exception, exiting");
+            }
+        }
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
 void StitchImage::RunOptimize(const std::string& strInputPath, const std::string& strOutputPath)
 {
     cv::TickMeter tm;
@@ -382,7 +639,8 @@ void StitchImage::RunOptimize(const std::string& strInputPath, const std::string
     m_strImageNameList.clear();
     m_cvmFrameList.clear();
     readFilenames(m_strImageNameList, strInputPath);
-
+    if (!strOutputPath.empty())
+        makeSingleDir(strOutputPath);
     //2nd. stitch all images together
     for (int iImgIdx = 0; iImgIdx < m_strImageNameList.size(); ++iImgIdx)
     {

@@ -28,8 +28,9 @@
 #define IDC_BUTTON_DETECT_NEW_FRAME     1019
 #define IDC_BUTTON_RUN                  1020
 #define IDC_BUTTON_WRITE_IMAGE          1021
-#define IDC_BUTTON6                     1022
 #define IDC_BUTTON_RUN_OPTIMIZE         1022
+#define IDC_BUTTON_DECODE_TIF           1023
+#define IDC_BUTTON_DECODE_TIFF          1023
 
 // Next default values for new objects
 // 
@@ -37,7 +38,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        130
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1023
+#define _APS_NEXT_CONTROL_VALUE         1024
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

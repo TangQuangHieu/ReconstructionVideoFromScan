@@ -117,19 +117,21 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;_DEBUG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\include\;.\;..\;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include\;.\;..\;..\Common\;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalLibraryDirectories>..\include\;.\;..\;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\include\;.\;..\;..\Win\libs\Debug\;</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>
       </IgnoreSpecificDefaultLibraries>
+      <AdditionalDependencies>ProcessImageLibrary.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
       <ValidateAllParameters>true</ValidateAllParameters>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
     </Midl>
     <ResourceCompile>
       <Culture>0x0409</Culture>
@@ -172,19 +174,21 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_WINDOWS;NDEBUG;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS;</PreprocessorDefinitions>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\include\;.\;..\;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include\;.\;..\;..\Common\;</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\include\;.\;..\;</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\include\;.\;..\;..\Win\libs;</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ProcessImageLibrary.lib;opencv_world440.lib</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
       <ValidateAllParameters>true</ValidateAllParameters>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
     </Midl>
     <ResourceCompile>
       <Culture>0x0409</Culture>
@@ -193,6 +197,9 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\Common\CintelRawImage.h" />
+    <ClInclude Include="..\Common\KeyKode.h" />
+    <ClInclude Include="..\Common\TimeCode.h" />
     <ClInclude Include="..\include\ConsoleAdapter.h" />
     <ClInclude Include="..\include\StitchImage.h" />
     <ClInclude Include="..\include\utilities.h" />
@@ -204,6 +211,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Common\CintelRawImage.cpp" />
+    <ClCompile Include="..\Common\KeyKode.cpp" />
+    <ClCompile Include="..\Common\TimeCode.cpp" />
     <ClCompile Include="..\include\ConsoleAdapter.cpp" />
     <ClCompile Include="..\include\StitchImage.cpp" />
     <ClCompile Include="pch.cpp">
@@ -223,6 +233,9 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\ReconstructVideoFromScan.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="..\Win\include\ScannerAPI.idl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

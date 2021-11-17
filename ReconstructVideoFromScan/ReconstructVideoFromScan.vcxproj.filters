@@ -45,6 +45,15 @@
     <ClInclude Include="..\include\ConsoleAdapter.h">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="..\Common\CintelRawImage.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\KeyKode.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\TimeCode.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ReconstructVideoFromScan.cpp">
@@ -62,6 +71,15 @@
     <ClCompile Include="..\include\ConsoleAdapter.cpp">
       <Filter>include</Filter>
     </ClCompile>
+    <ClCompile Include="..\Common\CintelRawImage.cpp">
+      <Filter>include</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\KeyKode.cpp">
+      <Filter>include</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Common\TimeCode.cpp">
+      <Filter>include</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ReconstructVideoFromScan.rc">
@@ -77,5 +95,10 @@
     <Image Include="res\ReconstructVideoFromScan.ico">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="..\Win\include\ScannerAPI.idl">
+      <Filter>include</Filter>
+    </Midl>
   </ItemGroup>
 </Project>

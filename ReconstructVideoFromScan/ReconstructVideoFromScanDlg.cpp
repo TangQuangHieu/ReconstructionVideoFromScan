@@ -82,6 +82,7 @@ BEGIN_MESSAGE_MAP(CReconstructVideoFromScanDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_RUN, &CReconstructVideoFromScanDlg::OnBnClickedButtonRun)
 	ON_BN_CLICKED(IDC_BUTTON_WRITE_IMAGE, &CReconstructVideoFromScanDlg::OnBnClickedButtonWriteImage)
 	ON_BN_CLICKED(IDC_BUTTON_RUN_OPTIMIZE, &CReconstructVideoFromScanDlg::OnBnClickedButtonRunOptimize)
+	ON_BN_CLICKED(IDC_BUTTON_DECODE_TIFF, &CReconstructVideoFromScanDlg::OnBnClickedButtonDecodeTiff)
 END_MESSAGE_MAP()
 
 
@@ -242,8 +243,9 @@ void CReconstructVideoFromScanDlg::LoadImageListPath()
 		{
 			//std::cout << entry.path() << std::endl;
 			auto& pathfile = entry.path();
-			if (pathfile.extension() == ".jpg" || ".tiff" ||
-				pathfile.extension() == ".bmp")
+			if (pathfile.extension().compare(".jpg")==0  || 
+				pathfile.extension().compare(".tiff")==0 ||
+				pathfile.extension().compare(".bmp")==0) 
 			{
 				auto cstrImageName = pathfile.filename().string();
 				m_hImageList.AddString(cstrImageName.c_str());
@@ -301,7 +303,7 @@ void CReconstructVideoFromScanDlg::OnBnClickedButtonRectifyBlackBorder()
 		CString cstrFullPath; cstrFullPath.Format("%s\\%s", m_cstrImagePath, cstrCurrentImage);
 		inputImage = cv::imread(std::string(cstrFullPath));
 		AddLog("[I].Processing Image %s", cstrCurrentImage);
-		m_StitchImage.RectifyBlackBorder(inputImage, std::string(cstrCurrentImage));
+		//m_StitchImage.RectifyBlackBorder(inputImage, std::string(cstrCurrentImage));
 	}
 	AddLog("[I].Done!");
 }
@@ -318,38 +320,32 @@ void CReconstructVideoFromScanDlg::OnBnClickedButtonStitchImages()
 		CString cstrFullPath; cstrFullPath.Format("%s\\%s", m_StitchImage.GetImagePath().c_str(), cstrCurrentImage);
 		AddLog("[I].Stitching Image %s", cstrCurrentImage);
 		cv::Mat inputImage = cv::imread(std::string(cstrFullPath));
-		if (Cnt == 0)
+	/*	if (Cnt == 0)
 		{
 			m_StitchImage.SetFirstImage(inputImage);
 		}
 		else
 		{
 			m_StitchImage.Stitch2Images(m_StitchImage.GetImageResult(), inputImage,false);
-		}
+		}*/
 	}
 	//m_StitchImage.WriteResult("Image_Stitch.tiff");
 	AddLog("[I].Done!");
 }
-
-
-
-
 
 void CReconstructVideoFromScanDlg::OnLbnSelchangeListImage()
 {
 	// TODO: Add your control notification handler code here
 	CString cstrCurrentImage;
 	m_hImageList.GetText(m_hImageList.GetCurSel(), cstrCurrentImage);
-	CString cstrFullPath; cstrFullPath.Format("%s\\%s", m_StitchImage.GetImagePath().c_str(), cstrCurrentImage);
+	CString cstrFullPath; GetDlgItemText(IDC_EDIT_IMAGE_PATH, cstrFullPath); cstrFullPath.Format("%s\\%s", cstrFullPath, cstrCurrentImage);
 	cv::Mat inputImage = cv::imread(std::string(cstrFullPath));
-	if (inputImage.empty())
+	if (!inputImage.empty())
 	{
-		cstrFullPath.Format("%s\\%s", m_cstrImagePath, cstrCurrentImage);
-		inputImage = cv::imread(std::string(cstrFullPath));
+		cv::namedWindow("Preview", 0);
+		cv::imshow("Preview", inputImage);
+		cv::waitKey(1);
 	}
-	cv::namedWindow("Preview", 0);
-	cv::imshow("Preview", inputImage);
-	cv::waitKey(1);
 }
 
 
@@ -387,7 +383,7 @@ void CReconstructVideoFromScanDlg::OnBnClickedButtonRetifyGreenColumn()
 	CString cstrFullPath; cstrFullPath.Format("%s\\%s", m_cstrImagePath, cstrCurrentImage);
 	cv::Mat inputImage = cv::imread(std::string(cstrFullPath));
 	AddLog("[I].Processing Image %s", cstrCurrentImage);
-	m_StitchImage.RectifyDeepBlueColumns(inputImage, std::string(cstrFullPath));
+	//m_StitchImage.RectifyDeepBlueColumns(inputImage, std::string(cstrFullPath));
 }
 
 
@@ -399,7 +395,7 @@ void CReconstructVideoFromScanDlg::OnBnClickedButtonDetectNewFrame()
 	CString cstrFullPath; cstrFullPath.Format("%s\\%s", m_cstrImagePath, cstrCurrentImage);
 	cv::Mat inputImage = cv::imread(std::string(cstrFullPath));
 	AddLog("[I].Processing Image %s", cstrCurrentImage);
-	m_StitchImage.DetectNewFrame(inputImage, true);
+	//m_StitchImage.DetectNewFrame(inputImage, true);
 }
 
 
@@ -425,6 +421,23 @@ void CReconstructVideoFromScanDlg::OnBnClickedButtonRunOptimize()
 {
 	// TODO: Add your control notification handler code here
 	CString cstrImagePath; GetDlgItemText(IDC_EDIT_IMAGE_PATH, cstrImagePath);
+	AddLog("[I].Processing folder ...%s", cstrImagePath);
 	CString cstrImageOutPath; cstrImageOutPath.Format("%s_Out", cstrImagePath);
-	m_StitchImage.RunOptimize(std::string(cstrImagePath), std::string(cstrImageOutPath));
+	CString cstrIntermediatePath; cstrIntermediatePath.Format("%s_Inter", cstrImagePath);
+	m_StitchImage.DecodeTiff(std::string(cstrImagePath), std::string(cstrIntermediatePath));
+	m_StitchImage.RunOptimize(std::string(cstrIntermediatePath), std::string(cstrImageOutPath));
+	SetDlgItemText(IDC_EDIT_IMAGE_PATH, cstrImageOutPath);
+	LoadImageListPath();
+	AddLog("[I].Done!");
+	
+}
+
+
+void CReconstructVideoFromScanDlg::OnBnClickedButtonDecodeTiff()
+{
+	// TODO: Add your control notification handler code here
+	//AddLog("[I].Decoding Tiff...");
+	//m_StitchImage.DecodeTiff("..\\data\\in\\", "..\\data\\out\\");
+	//AddLog("[I].Done!");
+	
 }
