@@ -83,6 +83,7 @@ BEGIN_MESSAGE_MAP(CReconstructVideoFromScanDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_WRITE_IMAGE, &CReconstructVideoFromScanDlg::OnBnClickedButtonWriteImage)
 	ON_BN_CLICKED(IDC_BUTTON_RUN_OPTIMIZE, &CReconstructVideoFromScanDlg::OnBnClickedButtonRunOptimize)
 	ON_BN_CLICKED(IDC_BUTTON_DECODE_TIFF, &CReconstructVideoFromScanDlg::OnBnClickedButtonDecodeTiff)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -440,4 +441,10 @@ void CReconstructVideoFromScanDlg::OnBnClickedButtonDecodeTiff()
 	//m_StitchImage.DecodeTiff("..\\data\\in\\", "..\\data\\out\\");
 	//AddLog("[I].Done!");
 	
+}
+
+void CReconstructVideoFromScanDlg::OnDestroy()
+{
+	cv::destroyAllWindows();
+	cv::waitKey(1);
 }

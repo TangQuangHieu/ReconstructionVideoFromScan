@@ -65,4 +65,5 @@ public:
 	afx_msg void OnBnClickedButtonWriteImage();
 	afx_msg void OnBnClickedButtonRunOptimize();
 	afx_msg void OnBnClickedButtonDecodeTiff();
+	afx_msg void OnDestroy();
 };

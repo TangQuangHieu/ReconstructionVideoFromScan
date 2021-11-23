@@ -6,7 +6,6 @@
 #include <future>
 #include <cstring>
 
-#include "pch.h"
 #include "ProcessImage.h"
 #include "CintelRawImage.h"
 #include "FilesystemUtils.h"
@@ -639,7 +638,7 @@ void StitchImage::RunOptimize(const std::string& strInputPath, const std::string
     m_strImageNameList.clear();
     m_cvmFrameList.clear();
     readFilenames(m_strImageNameList, strInputPath);
-    if (!strOutputPath.empty())
+    if (!strOutputPath.empty() && !MgIsFileExists(strOutputPath.c_str()))
         makeSingleDir(strOutputPath);
     //2nd. stitch all images together
     for (int iImgIdx = 0; iImgIdx < m_strImageNameList.size(); ++iImgIdx)
@@ -662,11 +661,11 @@ void StitchImage::RunOptimize(const std::string& strInputPath, const std::string
             //5th. split frames from stitched image
             SplitFrame(m_cvmOutImg);
             m_cvmOutImg = m_cvmFrameList.back();
-            m_cvmFrameList.erase(m_cvmFrameList.end()-1);
+            if(iImgIdx != m_strImageNameList.size()-1)
+                m_cvmFrameList.erase(m_cvmFrameList.end()-1);
             m_ROIYList.clear();
         }
     }
-
     //4th. Rectify deep blue columns
     //m_cvmOutImg = RectifyDeepBlueColumns(m_cvmOutImg, "");
 

@@ -216,7 +216,7 @@ void ConsoleAdapter::DestroyConsole()
             *stdin = m_fOldStdIn;
         }
     
-        if( ( OUTPUT_CONS == m_eConsoleType ) || ( BOTH == m_eConsoleType ) )
+        /*if( ( OUTPUT_CONS == m_eConsoleType ) || ( BOTH == m_eConsoleType ) )
         {
             if( 0 != m_fpCRTOut )
             {
@@ -224,7 +224,7 @@ void ConsoleAdapter::DestroyConsole()
             }
             _close( m_nCRTOut );
             *stdout = m_fOldStdOut;
-        }
+        }*/
         m_bDestroyed = true;
     }
     catch ( ... )

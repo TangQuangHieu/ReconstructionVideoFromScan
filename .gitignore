@@ -11,4 +11,8 @@
 include/opencv2/
 /data/
 ReconstructVideoFromScan/x64/
-
+TestDllMFC/x64/
+TestDllConsole/x64/
+ImageReconstruction/x64/
+ReconstructVideoFromScan/Debug/
+ReconstructVideoFromScan/Release/
